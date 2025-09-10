@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>剩余价值可视化</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #f5e6d3 0%, #e8d5b7 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 248, 240, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(139, 90, 43, 0.15);
+            position: relative;
+        }
+
+        h1 {
+            text-align: center;
+            color: #6b4423;
+            margin-bottom: 10px;
+            font-size: 2.5em;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #8b5a3c;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .data-table {
+            background: #fff8f0;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(139, 90, 43, 0.1);
+        }
+
+        .table-title {
+            font-size: 1.3em;
+            color: #6b4423;
+            margin-bottom: 20px;
+            font-weight: bold;
+            border-bottom: 2px solid #d4a574;
+            padding-bottom: 10px;
+        }
+
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 10px;
+            margin: 8px 0;
+            background: white;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            border: 1px solid #e8d5b7;
+        }
+
+        .data-row:hover {
+            transform: translateX(5px);
+            box-shadow: 0 3px 10px rgba(139, 90, 43, 0.15);
+        }
+
+        .data-label {
+            color: #6b4423;
+            font-weight: 500;
+        }
+
+        .data-value {
+            font-weight: bold;
+            font-size: 1.1em;
+        }
+
+        .positive { color: #2e7d32; }
+        .negative { color: #d32f2f; }
+        .neutral { color: #6b4423; }
+
+        .help-icon {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            background: #d4a574;
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 20px;
+            margin-left: 8px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s ease;
+        }
+
+        .help-icon:hover {
+            background: #b8935f;
+            transform: scale(1.2);
+        }
+
+        .time-visualization {
+            background: #fff8f0;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 20px rgba(139, 90, 43, 0.1);
+        }
+
+        .time-bar-container {
+            margin: 30px 0;
+            position: relative;
+        }
+
+        .time-bar {
+            height: 80px;
+            background: #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+            display: flex;
+            position: relative;
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .time-segment {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            transition: all 0.8s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .time-segment.necessary {
+            background: linear-gradient(135deg, #4a90e2, #357abd);
+            flex: 0;
+        }
+
+        .time-segment.surplus {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            flex: 0;
+        }
+
+        .time-segment.total {
+            background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+            flex: 1;
+        }
+
+        .time-label {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 0.9em;
+            color: #6b4423;
+        }
+
+        .explanation-box {
+            background: linear-gradient(135deg, #fff8f0, #ffefd5);
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 30px;
+            min-height: 200px;
+            box-shadow: 0 5px 20px rgba(139, 90, 43, 0.1);
+            border: 2px solid #d4a574;
+        }
+
+        .explanation-title {
+            font-size: 1.4em;
+            color: #6b4423;
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+
+        .explanation-text {
+            color: #5d4037;
+            line-height: 1.8;
+            font-size: 1.05em;
+        }
+
+        .highlight {
+            background: linear-gradient(to bottom, transparent 50%, #ffd54f 50%);
+            padding: 2px 4px;
+            font-weight: bold;
+        }
+
+        .control-panel {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #d4a574, #b8935f);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1em;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(139, 90, 43, 0.2);
+            font-weight: bold;
+            margin: 0 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 25px rgba(139, 90, 43, 0.3);
+        }
+
+        .btn:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: center;
+            margin: 20px 0;
+            gap: 15px;
+        }
+
+        .step {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+            transition: all 0.3s ease;
+        }
+
+        .step.active {
+            background: linear-gradient(135deg, #d4a574, #b8935f);
+            transform: scale(1.2);
+            box-shadow: 0 5px 15px rgba(139, 90, 43, 0.3);
+        }
+
+        .step.completed {
+            background: #8bc34a;
+        }
+
+        .tooltip {
+            position: fixed;
+            background: #6b4423;
+            color: white;
+            padding: 15px;
+            border-radius: 10px;
+            max-width: 300px;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            font-size: 0.95em;
+            line-height: 1.5;
+        }
+
+        .value-flow {
+            position: absolute;
+            font-size: 2em;
+            color: #e74c3c;
+            font-weight: bold;
+            animation: valueFlow 2s ease-out forwards;
+            z-index: 100;
+        }
+
+        @keyframes valueFlow {
+            0% {
+                transform: translate(0, 0) scale(0);
+                opacity: 0;
+            }
+            50% {
+                transform: translate(150px, -50px) scale(1.5);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(300px, -100px) scale(1);
+                opacity: 0;
+            }
+        }
+
+        .calculation-box {
+            background: #fff;
+            border: 2px dashed #d4a574;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .calculation-box.show {
+            display: block;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .formula {
+            font-family: 'Courier New', monospace;
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            color: #6b4423;
+        }
+
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚴 剩余价值可视化</h1>
+        <p class="subtitle">通过一个外卖订单，理解劳动价值理论的核心概念</p>
+        
+        <div class="step-indicator">
+            <div class="step" id="step0">0</div>
+            <div class="step" id="step1">1</div>
+            <div class="step" id="step2">2</div>
+            <div class="step" id="step3">3</div>
+            <div class="step" id="step4">4</div>
+        </div>
+
+        <div class="main-grid">
+            <div class="data-table">
+                <div class="table-title">📊 基础数据</div>
+                <div class="data-row">
+                    <span class="data-label">顾客支付 <span class="help-icon" data-tooltip="顾客为这个外卖订单实际支付的总金额">?</span></span>
+                    <span class="data-value positive">¥20.00</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">平台抽成 <span class="help-icon" data-tooltip="平台凭借对配送系统、订单系统等生产资料的垄断而获得的收入">?</span></span>
+                    <span class="data-value negative">-¥6.00</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">骑手损耗 <span class="help-icon" data-tooltip="包括车辆折旧、油费、通讯费等必要的生产成本">?</span></span>
+                    <span class="data-value negative">-¥2.00</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">骑手名义收入 <span class="help-icon" data-tooltip="骑手表面上获得的收入，但这不等于他创造的全部价值">?</span></span>
+                    <span class="data-value neutral">¥12.00</span>
+                </div>
+                <div class="data-row">
+                    <span class="data-label">总劳动时间 <span class="help-icon" data-tooltip="骑手完成这个订单所付出的全部劳动时间">?</span></span>
+                    <span class="data-value neutral">30分钟</span>
+                </div>
+            </div>
+
+            <div class="time-visualization">
+                <div class="table-title">⏰ 劳动时间分析</div>
+                <div class="time-bar-container">
+                    <div class="time-bar">
+                        <div class="time-segment total" id="timeBar">
+                            <span>总劳动时间: 30分钟</span>
+                        </div>
+                        <div class="time-segment necessary" id="necessaryTime"></div>
+                        <div class="time-segment surplus" id="surplusTime"></div>
+                    </div>
+                    <div class="time-label" id="timeLabel">准备开始分析...</div>
+                </div>
+                
+                <div class="calculation-box" id="calcBox">
+                    <div class="formula" id="formula"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="explanation-box">
+            <div class="explanation-title" id="expTitle">准备剖析剩余价值的秘密</div>
+            <div class="explanation-text" id="expText">
+                在资本主义生产关系中，工人的劳动创造了全部的新价值，但工人只能获得其中的一部分——用于维持自身再生产的部分。
+                让我们通过一个具体的外卖订单，来揭示这个过程是如何发生的。
+            </div>
+        </div>
+
+        <div class="control-panel">
+            <button class="btn" id="startBtn" onclick="startAnalysis()">开始剖析</button>
+            <button class="btn" id="resetBtn" onclick="resetAnalysis()" style="display: none;">重新开始</button>
+            <button class="btn" id="closeBtn" onclick="closeVisualization()" style="display: none; background: linear-gradient(135deg, #e74c3c, #c0392b);">关闭</button>
+        </div>
+    </div>
+
+    <div class="tooltip" id="tooltip"></div>
+
+    <script>
+        let currentStep = 0;
+        const steps = [
+            {
+                title: "初始状态",
+                text: "在资本主义生产关系中，工人的劳动创造了全部的新价值，但工人只能获得其中的一部分——用于维持自身再生产的部分。让我们通过一个具体的外卖订单，来揭示这个过程是如何发生的。"
+            },
+            {
+                title: "第一步：劳动力的价值是什么？",
+                text: "首先，我们要知道骑手工作一天需要多少钱才能'回本'。假设在当地，维持一个骑手基本的生活（衣食住行、车辆损耗），让他第二天还能继续工作，每天需要<span class='highlight'>120元</span>。如果他标准工作8小时，那么他'劳动力'的价值就是每小时<span class='highlight'>15元</span>。",
+                formula: "劳动力日薪 = 120元 | 劳动力时薪 = 120元 ÷ 8小时 = 15元/小时"
+            },
+            {
+                title: "第二步：必要劳动时间",
+                text: "骑手这30分钟的劳动，需要挣回多少钱来补偿自己的劳动力价值呢？按15元/小时计算，30分钟劳动力的价值是<span class='highlight'>7.5元</span>。那么，他需要工作多久才能创造出这7.5元呢？我们简化计算，他只需要工作<span class='highlight'>15分钟</span>。这15分钟，就是他的'必要劳动时间'——为自己挣工资的时间。",
+                formula: "30分钟的劳动力价值 = 15元/小时 × 0.5小时 = 7.5元 | 必要劳动时间 = 15分钟"
+            },
+            {
+                title: "第三步：剩余劳动时间",
+                text: "但他实际工作了整整30分钟。那么多出来的<span class='highlight'>15分钟</span>，就是'剩余劳动时间'。在这段时间里，他仍在为平台创造价值，但<span class='highlight'>这部分劳动是无偿的</span>。这就是资本主义剥削的核心机制——工人被迫进行超过自身劳动力价值的劳动。",
+                formula: "剩余劳动时间 = 总劳动时间(30分钟) - 必要劳动时间(15分钟) = 15分钟"
+            },
+            {
+                title: "第四步：剩余价值的诞生",
+                text: "骑手在30分钟里，总共创造了<span class='highlight'>18元</span>的新价值（12元名义收入 + 6元平台抽成）。其中，<span class='highlight'>7.5元</span>是补偿他自身劳动力价值的。而剩下的<span class='highlight'>10.50元</span>，就是他在这15分钟的'剩余劳动时间'里为平台无偿创造的<span class='highlight'>剩余价值</span>。这，才是平台利润的真正秘密。",
+                formula: "总创造价值 = 12元 + 6元 = 18元 | 剩余价值 = 18元 - 7.5元 = 10.50元 | 剥削率 = 10.50元 ÷ 7.5元 × 100% = 140%"
+            }
+        ];
+
+        function updateStep() {
+            // 更新步骤指示器
+            document.querySelectorAll('.step').forEach((step, index) => {
+                if (index < currentStep) {
+                    step.classList.add('completed');
+                    step.classList.remove('active');
+                } else if (index === currentStep) {
+                    step.classList.add('active');
+                    step.classList.remove('completed');
+                } else {
+                    step.classList.remove('active', 'completed');
+                }
+            });
+
+            // 更新说明文本
+            const step = steps[currentStep];
+            document.getElementById('expTitle').innerHTML = step.title;
+            document.getElementById('expText').innerHTML = step.text;
+
+            // 更新计算公式
+            const calcBox = document.getElementById('calcBox');
+            const formula = document.getElementById('formula');
+            if (step.formula) {
+                calcBox.classList.add('show');
+                formula.innerHTML = step.formula;
+            } else {
+                calcBox.classList.remove('show');
+            }
+
+            // 更新时间条
+            updateTimeBar();
+        }
+
+        function updateTimeBar() {
+            const totalBar = document.getElementById('timeBar');
+            const necessaryBar = document.getElementById('necessaryTime');
+            const surplusBar = document.getElementById('surplusTime');
+            const timeLabel = document.getElementById('timeLabel');
+
+            switch(currentStep) {
+                case 0:
+                case 1:
+                    totalBar.style.flex = '1';
+                    necessaryBar.style.flex = '0';
+                    surplusBar.style.flex = '0';
+                    timeLabel.innerHTML = "总劳动时间：30分钟";
+                    break;
+                case 2:
+                    totalBar.style.flex = '0';
+                    necessaryBar.style.flex = '1';
+                    necessaryBar.innerHTML = '必要劳动时间: 15分钟';
+                    surplusBar.style.flex = '1';
+                    surplusBar.style.opacity = '0.3';
+                    timeLabel.innerHTML = "必要劳动时间（蓝色）：为自己工作的15分钟";
+                    break;
+                case 3:
+                    totalBar.style.flex = '0';
+                    necessaryBar.style.flex = '1';
+                    surplusBar.style.flex = '1';
+                    surplusBar.style.opacity = '1';
+                    surplusBar.innerHTML = '剩余劳动时间: 15分钟';
+                    timeLabel.innerHTML = "剩余劳动时间（红色）：为资本家无偿工作的15分钟";
+                    break;
+                case 4:
+                    // 添加动画效果
+                    const valueFlow = document.createElement('div');
+                    valueFlow.className = 'value-flow';
+                    valueFlow.innerHTML = '¥10.50';
+                    valueFlow.style.left = '50%';
+                    valueFlow.style.top = '50%';
+                    document.querySelector('.time-bar-container').appendChild(valueFlow);
+                    setTimeout(() => valueFlow.remove(), 2000);
+                    
+                    timeLabel.innerHTML = "剩余价值 ¥10.50 = 剥削的真相";
+                    break;
+            }
+        }
+
+        function startAnalysis() {
+            if (currentStep < steps.length - 1) {
+                currentStep++;
+                updateStep();
+                
+                if (currentStep === steps.length - 1) {
+                    document.getElementById('startBtn').style.display = 'none';
+                    document.getElementById('resetBtn').style.display = 'inline-block';
+                }
+            }
+        }
+
+        function resetAnalysis() {
+            currentStep = 0;
+            updateStep();
+            document.getElementById('startBtn').style.display = 'inline-block';
+            document.getElementById('resetBtn').style.display = 'none';
+        }
+
+        // 工具提示功能
+        document.querySelectorAll('.help-icon').forEach(icon => {
+            icon.addEventListener('mouseenter', (e) => {
+                const tooltip = document.getElementById('tooltip');
+                tooltip.innerHTML = e.target.dataset.tooltip;
+                tooltip.style.display = 'block';
+                tooltip.style.left = e.pageX + 10 + 'px';
+                tooltip.style.top = e.pageY - 30 + 'px';
+            });
+            
+            icon.addEventListener('mouseleave', () => {
+                document.getElementById('tooltip').style.display = 'none';
+            });
+        });
+
+        // 初始化
+        updateStep();
+    </script>
+</body>
+</html>
